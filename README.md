@@ -16,7 +16,8 @@ However, many microservices like etcd, MongoDB, and other distributed systems re
 **This implementation attempts to provide some basic support for parsing URIs with multiple hosts.**
 
 ## About Contributing
-Donot make wheels yourself! If you want to contribute, please come and join us!
+Don’t reinvent the wheel!
+If you have feature suggestions or improvements, please open a Pull Request — we’d love to collaborate and grow this library together! 
 
 ## Build
 
