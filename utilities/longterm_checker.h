@@ -7,7 +7,8 @@
 #include <mutex>
 #include <thread>
 
-namespace timeutil {
+namespace cpptools {
+namespace utilities {
 
 class longterm_checker {
    public:
@@ -116,4 +117,5 @@ class recorder {
     time_point last_at_;
 };
 
-}  // namespace timeutil
+};  // namespace utilities
+}  // namespace cpptools

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
-project(uri_parser)
-set(CMAKE_CXX_STANDARD 20)
+project(cpptools)
+set(CMAKE_CXX_STANDARD 17)
 
 # Set default build type to Debug if not specified
 if(NOT CMAKE_BUILD_TYPE)
@@ -22,20 +22,12 @@ include(CTest)
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 
-add_library(uri_parser INTERFACE)
-target_include_directories(uri_parser INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/net)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/utilities)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/slog)
 
-add_executable(uri_parser_tests tests/uri_parser_gtest.cpp)
-target_link_libraries(uri_parser_tests PRIVATE uri_parser ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES} pthread)
+add_executable(uri_tests tests/uri_gtest.cpp)
+target_link_libraries(uri_tests PRIVATE ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES} pthread)
 
-# Explicitly enable debug options for the test executable
-target_compile_options(uri_parser_tests PRIVATE -g -O0)
-
-add_test(NAME uri_parser_tests COMMAND uri_parser_tests)
-
-# Add a custom target to run the tests with gdb
-add_custom_target(run_debug
-    COMMAND gdb --args $<TARGET_FILE:uri_parser_tests>
-    DEPENDS uri_parser_tests
-    COMMENT "Run gdb debugger on uri_parser_tests"
-)
+add_executable(scope_guard_tests tests/scope_guard_gtest.cpp)
+target_link_libraries(scope_guard_tests PRIVATE ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES} pthread)

@@ -3,10 +3,10 @@
 #include <string>
 
 #include <gtest/gtest.h>
-#include "uri_parser.h"
+#include "uri.h"
 
-TEST(UriParserTest, BasicParsing1) {
-    auto check = [](const std::string& uri) { EXPECT_EQ(uri::URI(uri).to_string(), uri); };
+TEST(UriTest, BasicParsing1) {
+    auto check = [](const std::string& uri) { EXPECT_EQ(cpptools::net::URI(uri).to_string(), uri); };
 
     check("http://example.com");
     check("http://user@example.com");
@@ -61,8 +61,8 @@ TEST(UriParserTest, BasicParsing1) {
 }
 
 // Basic parsing test
-TEST(UriParserTest, BasicParsing2) {
-    auto u = uri::URI("http://user:pass@host1:80,host2:81/path/to/%E4%BD%A0%E5%A5%BD?x=1&y=%20#frag");
+TEST(UriTest, BasicParsing2) {
+    auto u = cpptools::net::URI("http://user:pass@host1:80,host2:81/path/to/%E4%BD%A0%E5%A5%BD?x=1&y=%20#frag");
     EXPECT_EQ(u.to_string(), u.uri());
     EXPECT_EQ(u.scheme(), "http");
 
@@ -85,47 +85,47 @@ TEST(UriParserTest, BasicParsing2) {
 }
 
 // IPv6 address parsing test
-TEST(UriParserTest, Ipv6Parsing) {
-    auto u = uri::URI("https://[2001:db8::1]:443/abc");
+TEST(UriTest, Ipv6Parsing) {
+    auto u = cpptools::net::URI("https://[2001:db8::1]:443/abc");
     EXPECT_EQ(u.to_string(), u.uri());
     EXPECT_EQ(u.hosts().size(), 1);
     EXPECT_EQ(u.hosts()[0].host, "2001:db8::1");
     EXPECT_EQ(u.hosts()[0].port, 443);
 
     // Test without square brackets
-    auto u2 = uri::URI("tcp://2001:db8::1/path");
+    auto u2 = cpptools::net::URI("tcp://2001:db8::1/path");
     EXPECT_EQ(u2.hosts().size(), 1);
     EXPECT_EQ(u2.hosts()[0].host, "2001:db8::1");
     EXPECT_FALSE(u2.hosts()[0].port.has_value());
 }
 
 // File URI parsing test
-TEST(UriParserTest, FileUriParsing) {
-    auto u = uri::URI("file:///C:/Windows/System32");
+TEST(UriTest, FileUriParsing) {
+    auto u = cpptools::net::URI("file:///C:/Windows/System32");
     EXPECT_EQ(u.to_string(), u.uri());
     EXPECT_EQ(u.scheme(), "file");
     EXPECT_EQ(u.path(), "/C:/Windows/System32");
 }
 
 // Error handling test
-TEST(UriParserTest, ErrorHandling) {
+TEST(UriTest, ErrorHandling) {
     // Missing scheme
-    EXPECT_THROW(uri::URI("://no-scheme"), uri::parse_error);
+    EXPECT_THROW(cpptools::net::URI("://no-scheme"), cpptools::net::parse_error);
 
     // Unclosed IPv6 square brackets
-    EXPECT_THROW(uri::URI("http://[::1"), uri::parse_error);
+    EXPECT_THROW(cpptools::net::URI("http://[::1"), cpptools::net::parse_error);
 
     // Port out of range
-    EXPECT_THROW(uri::URI("http://host:99999/"), uri::parse_error);
+    EXPECT_THROW(cpptools::net::URI("http://host:99999/"), cpptools::net::parse_error);
 }
 
 // Performance test (not a unit test, but a separate function)
-TEST(UriParserTest, DISABLED_Performance) {
+TEST(UriTest, DISABLED_Performance) {
     const int N = 20000;
     std::string sample = "http://user:pass@host1:80,host2:81/path/to/resource?query=1#frag";
     auto t0 = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < N; ++i) {
-        auto u = uri::URI(sample);
+        auto u = cpptools::net::URI(sample);
         (void)u;
     }
     auto t1 = std::chrono::high_resolution_clock::now();

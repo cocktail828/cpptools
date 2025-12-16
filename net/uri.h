@@ -7,8 +7,7 @@
 //  - performance-minded parsing using std::string into stored raw input
 //  - more extensive test suite (assert-based) with many edge cases
 
-#ifndef URI_PARSER_H
-#define URI_PARSER_H
+#pragma once
 
 #include <algorithm>
 #include <array>
@@ -26,7 +25,8 @@
 #include <tuple>
 #include <vector>
 
-namespace uri {
+namespace cpptools {
+namespace net {
 
 struct parse_error : public std::runtime_error {
     explicit parse_error(const std::string &s) : std::runtime_error(s) {}
@@ -282,6 +282,5 @@ class URI final {
     }
 };
 
-}  // namespace uri
-
-#endif  // URI_PARSER_H
+};  // namespace net
+};  // namespace cpptools
