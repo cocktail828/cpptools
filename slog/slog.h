@@ -41,7 +41,7 @@ struct LogWrapper {
         : cfg_(cfg), logger_(std::make_shared<spdlog::logger>(cfg.progname, begin, end)) {}
 };
 
-inline std::shared_ptr<LogWrapper>& GetLogWrapper() {
+inline std::shared_ptr<LogWrapper>& getLogWrapper() {
     static std::shared_ptr<LogWrapper> wrapper = [] {
         LogConfig cfg;
         cfg.progname = "default";
@@ -83,13 +83,13 @@ inline void InitLoggingCompat(const LogConfig& cfg) {
         lw->logger_->flush_on(spdlog::level::err);
 
         spdlog::register_logger(lw->logger_);
-        GetLogWrapper().swap(lw);
+        getLogWrapper().swap(lw);
     });
 }
 
 inline void ShutdownLoggingCompat() {
     static std::once_flag once;
-    auto& lw = GetLogWrapper();
+    auto& lw = getLogWrapper();
     if (lw) {
         std::call_once(once, [&] {
             lw->logger_->flush();
@@ -106,7 +106,7 @@ class LogStream {
     }
 
     ~LogStream() {
-        auto& lw = GetLogWrapper();
+        auto& lw = getLogWrapper();
         if (!lw) return;
 
         // fast return
