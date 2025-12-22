@@ -5,4 +5,7 @@ TabWidth: 4
 UseTab: Never
 ColumnLimit: 120
 SortIncludes: false
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true
 ...
