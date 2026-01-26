@@ -121,9 +121,9 @@ TEST(UriTest, ErrorHandling) {
 
 // Performance test (not a unit test, but a separate function)
 TEST(UriTest, DISABLED_Performance) {
-    const int N = 20000;
+    const int   N      = 20000;
     std::string sample = "http://user:pass@host1:80,host2:81/path/to/resource?query=1#frag";
-    auto t0 = std::chrono::high_resolution_clock::now();
+    auto        t0     = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < N; ++i) {
         auto u = cpptools::net::URI(sample);
         (void)u;

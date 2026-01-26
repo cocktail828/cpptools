@@ -1,11 +1,14 @@
 cmake_minimum_required(VERSION 3.16)
 project(cpptools)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 # Set default build type to Debug if not specified
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build (Debug or Release)" FORCE)
 endif()
+
+# enable TSS2 support
+option(ENABLE_TSS2 "Enable TSS2 support" ON)
 
 # Add debug options
 add_compile_options(
@@ -20,14 +23,13 @@ add_compile_options(
 include(CTest)
 
 find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS})
+find_package(Threads REQUIRED)
 
+include_directories(${GTEST_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/net)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/utilities)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/slog)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/hardware)
 
-add_executable(uri_tests tests/uri_gtest.cpp)
-target_link_libraries(uri_tests PRIVATE ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES} pthread)
-
-add_executable(scope_guard_tests tests/scope_guard_gtest.cpp)
-target_link_libraries(scope_guard_tests PRIVATE ${GTEST_LIBRARIES} ${GTEST_MAIN_LIBRARIES} pthread)
+enable_testing()
+add_subdirectory(tests)
