@@ -29,15 +29,15 @@ namespace cpptools {
 namespace net {
 
 struct parse_error : public std::runtime_error {
-    explicit parse_error(const std::string &s) : std::runtime_error(s) {}
+    explicit parse_error(const std::string& s) : std::runtime_error(s) {}
 };
 
 struct HostPort {
-    std::string host;  // for IPv6 this does not include surrounding brackets
+    std::string             host;  // for IPv6 this does not include surrounding brackets
     std::optional<uint16_t> port;
-    bool operator==(const HostPort &o) const { return host == o.host && port == o.port; }
-    std::string to_string() const {
-        bool is_ipv6 = host.find(':') != std::string::npos;
+    bool                    operator==(const HostPort& o) const { return host == o.host && port == o.port; }
+    std::string             to_string() const {
+        bool        is_ipv6 = host.find(':') != std::string::npos;
         std::string inst;
         if (is_ipv6)
             inst += '[' + host + ']';
@@ -50,38 +50,39 @@ struct HostPort {
 
 class URI final {
    private:
-    std::string uri_;
-    std::string scheme_;
+    std::string                uri_;
+    std::string                scheme_;
     std::optional<std::string> authority_;
-    std::vector<HostPort> hosts_;
-    std::string path_;
+    std::vector<HostPort>      hosts_;
+    std::string                path_;
     std::optional<std::string> query_;
     std::optional<std::string> fragment_;
+    bool                       has_authority_ = false;
 
    public:
-    const std::string &uri() const { return uri_; }
-    const std::string &scheme() const { return scheme_; }
+    const std::string& uri() const { return uri_; }
+    const std::string& scheme() const { return scheme_; }
 
     typedef std::pair<std::string, std::string> UserPass;
-    const std::optional<UserPass> User() const {
+    std::optional<UserPass>                     User() const {
         if (!authority_) return std::nullopt;
-        auto a = *authority_;
-        size_t pos = a.find(':');
+        const auto& a   = *authority_;
+        size_t      pos = a.find(':');
         if (pos == std::string::npos) return std::make_pair(percent_decode(a), std::string{});
         return std::make_pair(percent_decode(a.substr(0, pos)), percent_decode(a.substr(pos + 1)));
     }
-    const std::vector<HostPort> &hosts() const { return hosts_; }
-    const std::string path() const { return percent_decode(path_); }
-    const std::optional<std::string> query() const {
-        return query_ ? std::optional(percent_decode(*query_)) : std::nullopt;
-    }
-    const std::optional<std::string> &fragment() const { return fragment_; }
+    const std::vector<HostPort>& hosts() const { return hosts_; }
+    std::string                  path() const { return percent_decode(path_); }
+    const std::string&           raw_path() const { return path_; }
+    std::optional<std::string> query() const { return query_ ? std::optional(percent_decode(*query_)) : std::nullopt; }
+    const std::optional<std::string>& raw_query() const { return query_; }
+    const std::optional<std::string>& fragment() const { return fragment_; }
 
     // Parse and return a URI object. Throws parse_error on invalid input
-    URI(const std::string input) : uri_(input) {
-        const char *s = uri_.c_str();
-        size_t len = uri_.size();
-        size_t i = 0;
+    URI(std::string input) : uri_(std::move(input)) {
+        const char* s   = uri_.c_str();
+        size_t      len = uri_.size();
+        size_t      i   = 0;
 
         if (len == 0) throw parse_error("empty input");
 
@@ -95,7 +96,7 @@ class URI final {
         if (scheme_end == std::string::npos) throw parse_error("missing scheme");
         if (scheme_end == 0) throw parse_error("empty scheme");
         for (size_t k = 0; k < scheme_end; ++k)
-            if (!is_scheme_char(input[k], k)) throw parse_error("invalid scheme char");
+            if (!is_scheme_char(uri_[k], k)) throw parse_error("invalid scheme char");
         this->scheme_ = uri_.substr(0, scheme_end);
 
         i = scheme_end + 1;
@@ -103,15 +104,16 @@ class URI final {
         // authority
         if (i + 1 < len && s[i] == '/' && s[i + 1] == '/') {
             i += 2;
+            has_authority_    = true;
             size_t auth_start = i;
-            size_t auth_end = i;
+            size_t auth_end   = i;
             while (auth_end < len && s[auth_end] != '/' && s[auth_end] != '?' && s[auth_end] != '#') ++auth_end;
             // parse authority between auth_start and auth_end
             if (auth_end > auth_start) {
                 std::string auth = uri_.substr(auth_start, auth_end - auth_start);
                 // find last '@' not inside brackets
-                int bracket = 0;
-                size_t at_pos = std::string::npos;
+                int    bracket = 0;
+                size_t at_pos  = std::string::npos;
                 for (size_t k = 0; k < auth.size(); ++k) {
                     char c = auth[k];
                     if (c == '[')
@@ -124,14 +126,14 @@ class URI final {
                 std::string hostportlist;
                 if (at_pos != std::string::npos) {
                     this->authority_ = auth.substr(0, at_pos);
-                    hostportlist = auth.substr(at_pos + 1);
+                    hostportlist     = auth.substr(at_pos + 1);
                 } else
                     hostportlist = auth;
 
-                // split by comma or semicolon
+                // split by comma only
                 size_t start = 0;
                 for (size_t k = 0; k <= hostportlist.size(); ++k) {
-                    if (k == hostportlist.size() || hostportlist[k] == ',' || hostportlist[k] == ';') {
+                    if (k == hostportlist.size() || hostportlist[k] == ',') {
                         if (k > start) {
                             std::string item = hostportlist.substr(start, k - start);
                             trim_space(item);
@@ -162,9 +164,10 @@ class URI final {
             this->fragment_ = uri_.substr(i);
         }
 
-        // normalize host to lowercase
-        for (auto &hp : this->hosts_) {
-            for (auto &c : hp.host) c = std::tolower((unsigned char)c);
+        // normalize host: percent-decode then lowercase
+        for (auto& hp : this->hosts_) {
+            hp.host = percent_decode(hp.host);
+            for (auto& c : hp.host) c = std::tolower((unsigned char)c);
         }
     }
 
@@ -188,18 +191,35 @@ class URI final {
         return str;
     }
 
+    static std::string percent_encode(const std::string& in, const std::string& allowed = "") {
+        std::string out;
+        out.reserve(in.size());
+        for (unsigned char c : in) {
+            if (is_unreserved(c) || allowed.find(c) != std::string::npos) {
+                out.push_back(static_cast<char>(c));
+            } else {
+                out.push_back('%');
+                out.push_back(hex_digit((c >> 4) & 0xF));
+                out.push_back(hex_digit(c & 0xF));
+            }
+        }
+        return out;
+    }
+
     std::string to_string() const {
         std::string str;
         str.append(scheme_);
         str.push_back(':');
-        str.append("//");
-        if (authority_) {
-            str.append(*authority_);
-            str.push_back('@');
-        }
-        for (size_t k = 0; k < hosts_.size(); ++k) {
-            if (k) str.push_back(',');
-            str.append(hosts_[k].to_string());
+        if (has_authority_) {
+            str.append("//");
+            if (authority_) {
+                str.append(*authority_);
+                str.push_back('@');
+            }
+            for (size_t k = 0; k < hosts_.size(); ++k) {
+                if (k) str.push_back(',');
+                str.append(hosts_[k].to_string());
+            }
         }
 
         str.append(path_);
@@ -217,18 +237,21 @@ class URI final {
    private:
     // helper functions
     static inline bool is_hex(char c) { return std::isxdigit((unsigned char)c); }
-    static inline int hex_val(char c) {
+    static inline int  hex_val(char c) {
         if (c >= '0' && c <= '9') return c - '0';
         if (c >= 'a' && c <= 'f') return c - 'a' + 10;
         return c - 'A' + 10;
     }
     static inline char hex_digit(int v) {
-        const char *H = "0123456789ABCDEF";
+        const char* H = "0123456789ABCDEF";
         return H[v & 0xF];
+    }
+    static inline bool is_unreserved(unsigned char c) {
+        return std::isalnum(c) || c == '-' || c == '.' || c == '_' || c == '~';
     }
 
     // trim spaces (in-place for string via slicing)
-    inline void trim_space(std::string &v) {
+    inline void trim_space(std::string& v) {
         size_t b = 0;
         while (b < v.size() && std::isspace((unsigned char)v[b])) ++b;
         size_t e = v.size();
@@ -264,7 +287,7 @@ class URI final {
             hp.host = item;
             return hp;
         }
-        hp.host = item.substr(0, colon);
+        hp.host      = item.substr(0, colon);
         auto portstr = item.substr(colon + 1);
         if (portstr.empty()) throw parse_error("empty port");
         hp.port = parse_port(portstr);
@@ -272,11 +295,12 @@ class URI final {
     }
 
     uint16_t parse_port(std::string s) {
+        if (s.size() > 1 && s[0] == '0') throw parse_error("port has leading zeros");
         int val = 0;
         for (char c : s) {
             if (!std::isdigit((unsigned char)c)) throw parse_error("port contains non-digit");
             val = val * 10 + (c - '0');
-            if (val > 65535) throw parse_error("port inst of range");
+            if (val > 65535) throw parse_error("port out of range");
         }
         return static_cast<uint16_t>(val);
     }

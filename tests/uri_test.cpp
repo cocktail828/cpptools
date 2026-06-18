@@ -117,6 +117,13 @@ TEST(UriTest, ErrorHandling) {
 
     // Port out of range
     EXPECT_THROW(cpptools::net::URI("http://host:99999/"), cpptools::net::parse_error);
+
+    // Port with leading zeros
+    EXPECT_THROW(cpptools::net::URI("http://host:08080/"), cpptools::net::parse_error);
+    EXPECT_THROW(cpptools::net::URI("http://host:00/"), cpptools::net::parse_error);
+
+    // Port 0 is valid (system-assigned)
+    EXPECT_NO_THROW(cpptools::net::URI("http://host:0/"));
 }
 
 // Performance test (not a unit test, but a separate function)
@@ -131,4 +138,39 @@ TEST(UriTest, DISABLED_Performance) {
     auto t1 = std::chrono::high_resolution_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0).count();
     std::cout << "Parsed " << N << " URIs in " << ms << " ms" << std::endl;
+}
+
+// Raw accessors test
+TEST(UriTest, RawAccessors) {
+    auto u = cpptools::net::URI("http://example.com/path%20with%20spaces?key=val%3Due");
+    EXPECT_EQ(u.raw_path(), "/path%20with%20spaces");
+    EXPECT_EQ(u.path(), "/path with spaces");
+    EXPECT_EQ(u.raw_query().value(), "key=val%3Due");
+    EXPECT_EQ(u.query().value(), "key=val=ue");
+}
+
+// percent_encode test
+TEST(UriTest, PercentEncode) {
+    EXPECT_EQ(cpptools::net::URI::percent_encode("hello world"), "hello%20world");
+    EXPECT_EQ(cpptools::net::URI::percent_encode("a/b?c=d"), "a%2Fb%3Fc%3Dd");
+    EXPECT_EQ(cpptools::net::URI::percent_encode("a/b?c=d", "/?="), "a/b?c=d");
+    EXPECT_EQ(cpptools::net::URI::percent_encode("~unreserved-._"), "~unreserved-._");
+
+    // round-trip
+    std::string original = "hello world/你好";
+    EXPECT_EQ(cpptools::net::URI::percent_decode(cpptools::net::URI::percent_encode(original)), original);
+}
+
+// Semicolon in host is not treated as separator
+TEST(UriTest, SemicolonInHost) {
+    auto u = cpptools::net::URI("http://host1;host2:80/path");
+    EXPECT_EQ(u.hosts().size(), 1);
+    EXPECT_EQ(u.hosts()[0].host, "host1;host2");
+    EXPECT_EQ(u.hosts()[0].port, 80);
+}
+
+// Host percent-decode normalization
+TEST(UriTest, HostPercentDecode) {
+    auto u = cpptools::net::URI("http://%65%78ample.com/path");
+    EXPECT_EQ(u.hosts()[0].host, "example.com");
 }
